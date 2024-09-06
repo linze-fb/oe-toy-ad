@@ -6,8 +6,8 @@ const roboto = Roboto({ weight: ['400', '500', '700'], subsets: ['latin'] });
 const openSans = Open_Sans({ weight: ['400', '600'], subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "OpenEvidence Toy Frontend",
-  description: "Good luck!",
+  title: "OpenEvidence Ads",
+  description: "Have Fun!",
 };
 
 export default function RootLayout({

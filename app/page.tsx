@@ -4,6 +4,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Container, TextField, Button, Typography, Paper, List, CircularProgress, Box, AppBar, Toolbar } from '@mui/material';
 import { styled } from '@mui/system';
+import AdDisplay from './components/AdDisplay';
+import { matchAd } from './utils/matchAd';
+import { Ad } from '../model/adModels';
 
 interface HistoryItem {
   role: string;
@@ -29,11 +32,20 @@ const FixedAppBar = styled(AppBar)({
   zIndex: 1100,
 });
 
+const FixedAdBar = styled(Box)({
+  position: 'fixed',
+  bottom: 0,
+  left: 0,
+  right: 0,
+  zIndex: 1000,
+  padding: '1rem',
+});
+
 export default function Home() {
   const [question, setQuestion] = useState<string>('');
   const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [answer, setAnswer] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [matchedAd, setMatchedAd] = useState<Ad | null>(null);  // State for matched ad
 
   const scrollToBottom = () => {
     window.scrollTo({
@@ -45,14 +57,18 @@ export default function Home() {
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
+    setMatchedAd(null);
 
     scrollToBottom();
+
+    // match ad for the user's question
+    const matchedAd = await matchAd(question);  
+    setMatchedAd(matchedAd);
 
     try {
       const response = await axios.post('/api/ask', { question, history });
 
       setHistory([...history, { role: 'user', content: question }, { role: 'assistant', content: response.data.answer }]);
-      setAnswer(response.data.answer);
       setQuestion('');
     } catch (error) {
       console.error('Error fetching the answer:', error);
@@ -63,8 +79,8 @@ export default function Home() {
 
   const handleNewConversation = () => {
     setHistory([]);
-    setAnswer('');
     setQuestion('');
+    setMatchedAd(null);
     scrollToBottom();
   };
 
@@ -100,6 +116,7 @@ export default function Home() {
             ))}
           </List>
         )}
+
         <StyledPaper elevation={3}>
           <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <TextField
@@ -115,11 +132,20 @@ export default function Home() {
             </StyledButton>
           </form>
         </StyledPaper>
-        {loading && (
-          <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
-            <CircularProgress />
-          </Box>
-        )}
+
+        {loading &&
+            <Box display="flex" justifyContent="center" alignItems="center" mt={2}>
+              <CircularProgress />
+            </Box>
+        }
+
+        {
+          matchedAd &&
+          <FixedAdBar>
+            <AdDisplay ad={matchedAd} triggeredKeywords={matchedAd ? matchedAd.category.split(' ') : []} />
+          </FixedAdBar>
+        }
+
       </Container>
     </>
   );
